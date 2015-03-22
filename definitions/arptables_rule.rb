@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: arptables
-# Recipe:: default
+# Definition:: arptables_rule
 #
 # The MIT License (MIT)
 # 
@@ -24,23 +24,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-node[:arptables][:packages].each do |pkg|
-  package pkg
-end
+define :arptables_rule, :enable => true, :source => nil, :variables => {}, :cookbook => nil do
+  template_source = params[:source] ? params[:source] : "#{params[:name]}.erb"
 
-execute 'rebuild-arptables' do
-  command '/usr/sbin/rebuild-arptables'
-  action :nothing
-end
-
-directory '/etc/arptables.d' do
-  action :create
-end
-
-template '/usr/sbin/rebuild-arptables' do
-  source 'rebuild-arptables.erb'
-  mode '0755'
-  variables(
-    :hashbang => ::File.exist?('/usr/bin/ruby') ? '/usr/bin/ruby' : '/opt/chef/embedded/bin/ruby'
-  )
+  template "/etc/arptables.d/#{params[:name]}" do
+    source template_source
+    mode '0644'
+    cookbook params[:cookbook] if params[:cookbook]
+    variables params[:variables]
+    backup false
+    notifies :run, resources(execute => 'rebuild-arptables')
+    if params[:enable]
+      action :create
+    else
+      action :delete
+    end
+  end
 end

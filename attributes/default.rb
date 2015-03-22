@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: arptables
-# Recipe:: default
+# Attribute:: default
 #
 # The MIT License (MIT)
 # 
@@ -24,23 +24,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-node[:arptables][:packages].each do |pkg|
-  package pkg
-end
-
-execute 'rebuild-arptables' do
-  command '/usr/sbin/rebuild-arptables'
-  action :nothing
-end
-
-directory '/etc/arptables.d' do
-  action :create
-end
-
-template '/usr/sbin/rebuild-arptables' do
-  source 'rebuild-arptables.erb'
-  mode '0755'
-  variables(
-    :hashbang => ::File.exist?('/usr/bin/ruby') ? '/usr/bin/ruby' : '/opt/chef/embedded/bin/ruby'
-  )
-end
+default[:arptables][:packages] = %w(arptables)

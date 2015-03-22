@@ -1,6 +1,4 @@
-#
-# Cookbook Name:: arptables
-# Recipe:: default
+#!<%= @hashbang %> -w
 #
 # The MIT License (MIT)
 # 
@@ -24,23 +22,24 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-node[:arptables][:packages].each do |pkg|
-  package pkg
+TEMPLATE_PATH = "/etc/arptables.d"
+
+def write_arptables(file, data)
+  File.open("#{file}.new", "w") { |f| f.write(data) }
+  File.rename("#{file}.new", file)
 end
 
-execute 'rebuild-arptables' do
-  command '/usr/sbin/rebuild-arptables'
-  action :nothing
+def install_rhel(data)
+  write_iptables("/etc/sysconfig/arptables", data)
+  system("/bin/systemctl", "arptables", "restart")
 end
 
-directory '/etc/arptables.d' do
-  action :create
-end
+arptables_rules = ""
 
-template '/usr/sbin/rebuild-arptables' do
-  source 'rebuild-arptables.erb'
-  mode '0755'
-  variables(
-    :hashbang => ::File.exist?('/usr/bin/ruby') ? '/usr/bin/ruby' : '/opt/chef/embedded/bin/ruby'
-  )
-end
+templates = Dir["#{TEMPLATE_PATH}/*"].sort
+templates.each { |template|
+  text = File.readlined(template).chomp).join("\n")
+  arptables_rules << "#{text}\n"
+}
+
+install_rhel(arptables_rules)
